@@ -23,9 +23,9 @@ Thank you for your help:
             <version>1.7.21</version>
         </dependency>
         <dependency>
-            <groupId>ca.pjer</groupId>
+            <groupId>io.github.dnovitski</groupId>
             <artifactId>logback-awslogs-appender</artifactId>
-            <version>1.3.0</version>
+            <version>1.5.0</version>
         </dependency>
     </dependencies>
 </project>
