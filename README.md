@@ -25,7 +25,7 @@ Thank you for your help:
         <dependency>
             <groupId>io.github.dnovitski</groupId>
             <artifactId>logback-awslogs-appender</artifactId>
-            <version>1.5.0</version>
+            <version>1.5.1</version>
         </dependency>
     </dependencies>
 </project>
