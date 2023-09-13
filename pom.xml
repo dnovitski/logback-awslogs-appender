@@ -7,7 +7,7 @@
 
     <groupId>io.github.dnovitski</groupId>
     <artifactId>logback-awslogs-appender</artifactId>
-    <version>1.7.1</version>
+    <version>1.7.2</version>
 
     <name>Logback AWSLogs appender</name>
     <description>An Amazon Web Services (AWS) Logs (CloudWatch) appender for Logback</description>
