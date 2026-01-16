@@ -30,7 +30,7 @@ Thank you for your help:
         <dependency>
             <groupId>io.github.dnovitski</groupId>
             <artifactId>logback-awslogs-appender</artifactId>
-            <version>1.7.5</version>
+            <version>1.7.6</version>
         </dependency>
     </dependencies>
 </project>
