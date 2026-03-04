@@ -3,10 +3,6 @@ package ca.pjer.logback.client;
 import ca.pjer.logback.compression.CompressionUtilility;
 import ca.pjer.logback.metrics.AwsLogsMetricsHolder;
 import ca.pjer.logback.tokenisation.TokenUtility;
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -16,13 +12,15 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import tools.jackson.core.JsonEncoding;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.json.JsonFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -40,7 +38,7 @@ public class AwsLogsS3Client implements AwsLogsClient {
     private final AwsLogsClientProperties properties;
     private final S3Client client;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private final JsonFactory jsonFactory = new JsonFactory();
+    private final JsonFactory jsonFactory = JsonFactory.builder().build();
     private final AtomicLong counter = new AtomicLong(0);
     private final Map<String, Supplier<String>> bucketPathTokenSuppliers = new HashMap<>();
 
@@ -107,7 +105,6 @@ public class AwsLogsS3Client implements AwsLogsClient {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             JsonGenerator jsonGenerator = jsonFactory.createGenerator(outputStream, JsonEncoding.UTF8);
-            jsonGenerator.setPrettyPrinter(new MinimalPrettyPrinter(""));
 
             if (FILE_FORMAT_JSON_HIVE.equals(properties.getS3FileFormat()) || properties.getS3FileFormat() == null) {
                 // JSON Hive format places each event record as a single line with the JSON object, terminated with a new line
@@ -122,10 +119,10 @@ public class AwsLogsS3Client implements AwsLogsClient {
                     appendLogJsonLogEvent(jsonGenerator, event);
                 }
                 jsonGenerator.writeEndArray();
-            } else if (FILE_FORMAT_JSON_RECORDS_ARRAY.equals(properties.getS3FileFormat())){
+            } else if (FILE_FORMAT_JSON_RECORDS_ARRAY.equals(properties.getS3FileFormat())) {
                 // Use the following JSON format: { "Records" : [ ... ] }
                 jsonGenerator.writeStartObject();
-                jsonGenerator.writeFieldName(RECORDS);
+                jsonGenerator.writeName(RECORDS);
                 jsonGenerator.writeStartArray();
 
                 for (InputLogEvent event : events) {
@@ -148,8 +145,8 @@ public class AwsLogsS3Client implements AwsLogsClient {
             jsonGenerator.writeRawValue(message);
         } else { // Plain text lines probably
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("@timestamp", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(Instant.ofEpochMilli(event.timestamp()).atZone(properties.getZoneId())));
-            jsonGenerator.writeStringField("message", event.message());
+            jsonGenerator.writeStringProperty("@timestamp", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(Instant.ofEpochMilli(event.timestamp()).atZone(properties.getZoneId())));
+            jsonGenerator.writeStringProperty("message", event.message());
             jsonGenerator.writeEndObject();
         }
     }

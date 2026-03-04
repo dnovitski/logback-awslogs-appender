@@ -7,7 +7,7 @@
 
     <groupId>io.github.dnovitski</groupId>
     <artifactId>logback-awslogs-appender</artifactId>
-    <version>1.7.6</version>
+    <version>1.7.7</version>
 
     <name>Logback AWSLogs appender</name>
     <description>An Amazon Web Services (AWS) Logs (CloudWatch) appender for Logback</description>
@@ -51,7 +51,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <awssdk.version>2.41.8</awssdk.version>
+        <awssdk.version>2.42.4</awssdk.version>
     </properties>
 
     <dependencies>
@@ -61,9 +61,9 @@
             <version>1.5.19</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.20.0</version>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
