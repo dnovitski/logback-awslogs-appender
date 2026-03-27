@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.apache5.Apache5HttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -18,7 +19,6 @@ import tools.jackson.core.json.JsonFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -44,7 +44,8 @@ public class AwsLogsS3Client implements AwsLogsClient {
 
     public AwsLogsS3Client(AwsLogsClientProperties properties) {
         this.properties = properties;
-        S3ClientBuilder builder = S3Client.builder();
+        S3ClientBuilder builder = S3Client.builder()
+                .httpClientBuilder(Apache5HttpClient.builder());
 
         if (Objects.nonNull(properties.getEndpoint())) {
             try {
@@ -67,8 +68,8 @@ public class AwsLogsS3Client implements AwsLogsClient {
         }
 
         client = builder.build();
-        bucketPathTokenSuppliers.put("log_group", () -> properties.getLogGroupName());
-        bucketPathTokenSuppliers.put("log_stream", () -> properties.getLogStreamName());
+        bucketPathTokenSuppliers.put("log_group", properties::getLogGroupName);
+        bucketPathTokenSuppliers.put("log_stream", properties::getLogStreamName);
         bucketPathTokenSuppliers.put("date", () -> dateFormatter.format(Instant.now().atZone(properties.getZoneId())));
         bucketPathTokenSuppliers.put("uuid", () -> UUID.randomUUID().toString());
         bucketPathTokenSuppliers.put("millis", () -> String.format("%020d", System.currentTimeMillis()));
@@ -139,7 +140,7 @@ public class AwsLogsS3Client implements AwsLogsClient {
         }
     }
 
-    private void appendLogJsonLogEvent(JsonGenerator jsonGenerator, InputLogEvent event) throws IOException {
+    private void appendLogJsonLogEvent(JsonGenerator jsonGenerator, InputLogEvent event) {
         String message = event.message();
         if (isJsonFormat(message)) {
             jsonGenerator.writeRawValue(message);

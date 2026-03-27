@@ -4,6 +4,7 @@ import ca.pjer.logback.metrics.AwsLogsMetricsHolder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.apache5.Apache5HttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
@@ -21,7 +22,8 @@ public class AwsLogsCloudWatchClient implements AwsLogsClient {
 
     public AwsLogsCloudWatchClient(AwsLogsClientProperties properties) {
         this.properties = properties;
-        CloudWatchLogsClientBuilder builder = CloudWatchLogsClient.builder();
+        CloudWatchLogsClientBuilder builder = CloudWatchLogsClient.builder()
+                .httpClientBuilder(Apache5HttpClient.builder());
 
         if (Objects.nonNull(properties.getEndpoint())) {
             try {
