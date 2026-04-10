@@ -48,11 +48,11 @@ abstract class Worker {
     private static final int EVENT_SIZE_PADDING = 26;
     private static final Charset EVENT_SIZE_CHARSET = Charset.forName("UTF-8");
 
-    static final int eventSize(InputLogEvent event) {
+    static int eventSize(InputLogEvent event) {
         return eventSize(event.message());
     }
 
-    static final int eventSize(String message) {
+    static int eventSize(String message) {
         return message.getBytes(EVENT_SIZE_CHARSET).length + EVENT_SIZE_PADDING;
     }
 
