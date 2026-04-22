@@ -2,9 +2,7 @@ package ca.pjer.logback;
 
 import static ca.pjer.logback.AwsLogsAppender.MAX_BATCH_LOG_EVENTS;
 
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.Deque;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +20,7 @@ class AsyncWorker extends Worker implements Runnable {
     private final int maxBatchLogEvents;
     private final int discardThreshold;
     private final AtomicBoolean running;
-    private final BlockingQueue<InputLogEvent> queue;
+    private final BlockingQueue<MemoizedEvent> queue;
     private final AtomicLong lostCount;
 
     private Thread thread;
@@ -32,7 +30,7 @@ class AsyncWorker extends Worker implements Runnable {
         maxBatchLogEvents = awsLogsAppender.getMaxBatchLogEvents();
         discardThreshold = (int) Math.ceil(maxBatchLogEvents * 1.5);
         running = new AtomicBoolean(false);
-        queue = new ArrayBlockingQueue<InputLogEvent>(maxBatchLogEvents * 2);
+        queue = new ArrayBlockingQueue<>(maxBatchLogEvents * 2);
         lostCount = new AtomicLong(0);
     }
 
@@ -87,7 +85,7 @@ class AsyncWorker extends Worker implements Runnable {
                 long now = System.currentTimeMillis();
                 while (now < until) {
                     try {
-                        if (!queue.offer(logEvent, until - now, TimeUnit.MILLISECONDS)) {
+                        if (!queue.offer(new MemoizedEvent(logEvent), until - now, TimeUnit.MILLISECONDS)) {
                             lostCount.incrementAndGet();
                             AwsLogsMetricsHolder.get().incrementLostCount();
                         }
@@ -104,7 +102,7 @@ class AsyncWorker extends Worker implements Runnable {
             }
         } else {
             // we are not allowed to block, offer without blocking
-            if (!queue.offer(logEvent)) {
+            if (!queue.offer(new MemoizedEvent(logEvent))) {
                 lostCount.incrementAndGet();
                 AwsLogsMetricsHolder.get().incrementLostCount();
             }
@@ -160,12 +158,12 @@ class AsyncWorker extends Worker implements Runnable {
     private static final int MAX_BATCH_SIZE = 1048576;
 
     private Collection<InputLogEvent> drainBatchFromQueue() {
-        Deque<InputLogEvent> batch = new ArrayDeque<InputLogEvent>(maxBatchLogEvents);
+        Deque<MemoizedEvent> batch = new ArrayDeque<>(maxBatchLogEvents);
         queue.drainTo(batch, MAX_BATCH_LOG_EVENTS);
         int batchSize = batchSize(batch);
         while (batchSize > MAX_BATCH_SIZE) {
-            InputLogEvent removed = batch.removeLast();
-            batchSize -= eventSize(removed);
+            MemoizedEvent removed = batch.removeLast();
+            batchSize -= removed.eventSize();
             if (!queue.offer(removed)) {
                 AwsLogsMetricsHolder.get().incrementBatchRequeueFailed();
                 if (getAwsLogsAppender().getVerbose()) {
@@ -175,13 +173,18 @@ class AsyncWorker extends Worker implements Runnable {
         }
 
         AwsLogsMetricsHolder.get().incrementBatch(batchSize);
-        return batch;
+
+        List<InputLogEvent> array = new ArrayList<>(batchSize);
+        for (MemoizedEvent event : batch) {
+            array.add(event.event());
+        }
+        return array;
     }
     
-    private static int batchSize(Collection<InputLogEvent> batch) {
+    private static int batchSize(Collection<MemoizedEvent> batch) {
         int size = 0;
-        for (InputLogEvent event : batch) {
-            size += eventSize(event);
+        for (MemoizedEvent event : batch) {
+            size += event.eventSize();
         }
         return size;
     }
